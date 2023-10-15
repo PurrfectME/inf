@@ -2,17 +2,25 @@ import { Blockchain, SandboxContract, TreasuryContract } from '@ton-community/sa
 import { Address, beginCell, toNano } from 'ton-core';
 import '@ton-community/test-utils';
 import { InfluenceMasterContract } from '../build/InfluenceMaster/tact_InfluenceMasterContract';
+import { buildOnchainMetadata } from '../contracts/build_data';
 
 describe('InfluenceMaster', () => {
     let blockchain: Blockchain;
     let influenceMaster: SandboxContract<InfluenceMasterContract>;
     let deployer: SandboxContract<TreasuryContract>;
 
+    const metadata = {
+        "name": "INFLUENCE WORLD",
+        "description": "KAK JE YA HAROSH",
+        "image": "https://yt3.googleusercontent.com/YR8JivTsOQ4svnDFCdnIqYAPhwIeTRg8w0Sukv1orUYJoN2iZtaEprhWXcweMdrtcGGmptvSgQ=s176-c-k-c0x00ffffff-no-rj",
+        "symbol": "INFK"
+    };
+
     beforeEach(async () => {
         blockchain = await Blockchain.create();
 
         influenceMaster = blockchain.openContract(
-            await InfluenceMasterContract.fromInit(100n));
+            await InfluenceMasterContract.fromInit(buildOnchainMetadata(metadata), 100n));
 
         deployer = await blockchain.treasury('deployer');
 

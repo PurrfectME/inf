@@ -20,16 +20,11 @@ contract InfluenceMasterContract with Jetton {
     mintable: Bool;
     maxSupply: Int as coins; // Extract parameter we set here. The Jetton Standards doesn't have this parameter.
 
-    init(maxSupply: Int){
+    init(content: Cell, maxSupply: Int){
         self.totalSupply = 0;
         self.owner = sender();
         self.mintable = true;
-        self.content = ContentData{name: "INFLUENCE TOKEN",
-            description: "MEGA SUPER DUPER HAROSH",
-            symbol: "IJE8",
-            decimals: 9,
-            image: "https://static.vecteezy.com/system/resources/previews/005/502/367/non_2x/solid-cloud-illustration-glyph-icon-free-vector.jpg"
-        }.toCell();
+        self.content = content;
         self.maxSupply = maxSupply;
     }
 
@@ -53,7 +48,6 @@ contract InfluenceMasterContract with Jetton {
         self.mintable = false;
     }
 }
-
 // ============================================================================================================ //
 @interface("org.ton.jetton.master")
 trait Jetton with Ownable, Deployable {
@@ -160,7 +154,6 @@ contract InfluenceWallet
         let fwdFee: Int = ctx.readForwardFee() + ctx.readForwardFee();
         let final: Int = 2 * self.gasConsumption + self.minTonsForStorage + fwdFee;
         require(ctx.value > min(final, ton("0.01")), "Invalid value!!");
-
         // Update balance
         self.balance = self.balance - msg.amount;
         require(self.balance >= 0, "Invalid balance");
@@ -193,7 +186,6 @@ contract InfluenceWallet
         // Update balance
         self.balance = self.balance + msg.amount;
         require(self.balance >= 0, "Invalid balance");
-
         // Get value for gas
         let msgValue: Int = self.msgValue(ctx.value);
         let fwdFee: Int = ctx.readForwardFee();
@@ -253,13 +245,13 @@ contract InfluenceWallet
         return msgValue;
     }
 
-    bounced(src: bounced<TokenTransferInternal>){
-        self.balance = self.balance + src.amount;
-    }
+    // bounced(src: bounced<TokenTransferInternal>){
+    //     self.balance = self.balance + src.amount;
+    // }
 
-    bounced(src: bounced<TokenBurnNotification>){
-        self.balance = self.balance + src.amount;
-    }
+    // bounced(src: bounced<TokenBurnNotification>){
+    //     self.balance = self.balance + src.amount;
+    // }
 
     get fun get_wallet_data(): JettonWalletData {
         return
