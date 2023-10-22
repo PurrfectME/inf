@@ -44,7 +44,14 @@ describe('InfluenceMaster', () => {
     });
 
     it('should deploy', async () => {
-        // the check is done inside beforeEach
-        // blockchain and influenceMaster are ready to use
+        const res = await influenceMaster.send(
+            deployer.getSender(),
+            {
+                value: toNano('0.05'),
+            },
+            'Mint: 100'
+        );
+
+
     });
 });

@@ -14,14 +14,15 @@ struct ContentData {
 }
 
 contract InfluenceMasterContract with Jetton {
+    const minTonsForStorage: Int = ton("0.01");
+    const gasConsumption: Int = ton("0.01");
     totalSupply: Int as coins;
     owner: Address;
     content: Cell;
     mintable: Bool;
     maxSupply: Int as coins; // Extract parameter we set here. The Jetton Standards doesn't have this parameter.
-
     init(content: Cell, maxSupply: Int){
-        self.totalSupply = 0;
+        self.totalSupply = ton("5000");
         self.owner = sender();
         self.mintable = true;
         self.content = content;
@@ -46,6 +47,28 @@ contract InfluenceMasterContract with Jetton {
         let ctx: Context = context();
         require(ctx.sender == self.owner, "Not Owner");
         self.mintable = false;
+    }
+
+    receive("buy"){
+        let ctx: Context = context();
+        //ВОТ ЭТА СТРОЧКА СДЕЛАНА ЧТОБЫ НА МАСТЕР ВОЛЕТЕ БЫЛ БАЛАНС ЧТОБЫ СЛАТЬ транзы на минт(костыль пиздец)
+        //то есть сначала мы закидываем на наш мастер волет денег а потом уже реквест на минт токенов
+        //это потом просто можно вынести в отдельный рисив и проверку здесь делать
+        if (myBalance() == 0) {
+            send(SendParameters{to: myAddress(), value: 0, bounce: true, mode: SendRemainingValue + SendIgnoreErrors});
+        } else {
+            //поделили на 2 чтобы хоть как-то убедиться что токены придут
+            self.mint(ctx.sender, ctx.value / 2, self.owner);
+            send(SendParameters{to: myAddress(), value: 0, bounce: true, mode: SendRemainingValue + SendIgnoreErrors});
+        }
+    }
+
+     fun msgValue(value: Int): Int {
+        let msgValue: Int = value;
+        let tonBalanceBeforeMsg: Int = myBalance() - msgValue;
+        let storageFee: Int = self.minTonsForStorage - min(tonBalanceBeforeMsg, self.minTonsForStorage);
+        msgValue = msgValue - storageFee + self.gasConsumption;
+        return msgValue;
     }
 }
 // ============================================================================================================ //
@@ -82,14 +105,15 @@ trait Jetton with Ownable, Deployable {
     // @amount The amount of Jetton token being minted
     // @response_destination The previous owner address
      fun mint(to: Address, amount: Int, response_destination: Address) {
-        require(self.totalSupply + amount <= self.maxSupply, "The total supply will be overlapping.");
+        // require(self.totalSupply + amount <= self.maxSupply, "The total supply will be overlapping.");
         self.totalSupply = self.totalSupply + amount; // Update total supply
 
         let winit: StateInit = self.getJettonWalletInit(to); // Create message
         send(SendParameters{to: contractAddress(winit),
-                value: 0,
+                //ОЛЕГ ВОТ ТУТ НАДО КАК_ТО ПОДУМАТЬ))) как корректно взять стоимость для транзы этой
+                value: amount / 2,
                 bounce: true,
-                mode: SendRemainingValue,
+                mode: SendIgnoreErrors,
                 body: TokenTransferInternal{queryId: 0,
                     amount: amount,
                     from: myAddress(),

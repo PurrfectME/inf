@@ -11,12 +11,12 @@ const metadata = {
 };
 
 export async function run(provider: NetworkProvider) {
-    const influenceMaster = provider.open(await InfluenceMasterContract.fromInit(buildOnchainMetadata(metadata), 100n));
+    const influenceMaster = provider.open(await InfluenceMasterContract.fromInit(buildOnchainMetadata(metadata), 50000n));
 
     await influenceMaster.send(
         provider.sender(),
         {
-            value: toNano('0.5'),
+            value: toNano('0.2'),
         },
         {
             $$type: 'Deploy',
