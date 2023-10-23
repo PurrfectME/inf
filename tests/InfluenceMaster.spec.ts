@@ -1,12 +1,13 @@
-import { Blockchain, SandboxContract, TreasuryContract } from '@ton-community/sandbox';
-import { Address, beginCell, toNano } from 'ton-core';
+import { Blockchain, EventAccountCreated, SandboxContract, TreasuryContract } from '@ton-community/sandbox';
+import { Address, beginCell, fromNano, toNano } from 'ton-core';
 import '@ton-community/test-utils';
-import { InfluenceMasterContract } from '../build/InfluenceMaster/tact_InfluenceMasterContract';
 import { buildOnchainMetadata } from '../contracts/build_data';
+import { FundContract } from '../build/InfluenceMaster/tact_FundContract';
+import { InfluenceMaster } from '../wrappers/InfluenceMaster';
 
 describe('InfluenceMaster', () => {
     let blockchain: Blockchain;
-    let influenceMaster: SandboxContract<InfluenceMasterContract>;
+    let influenceMaster: SandboxContract<InfluenceMaster>;
     let deployer: SandboxContract<TreasuryContract>;
 
     const metadata = {
@@ -20,14 +21,14 @@ describe('InfluenceMaster', () => {
         blockchain = await Blockchain.create();
 
         influenceMaster = blockchain.openContract(
-            await InfluenceMasterContract.fromInit(buildOnchainMetadata(metadata), 100n));
+            await InfluenceMaster.fromInit(buildOnchainMetadata(metadata), 100n));
 
         deployer = await blockchain.treasury('deployer');
 
         const deployResult = await influenceMaster.send(
             deployer.getSender(),
             {
-                value: toNano('0.05'),
+                value: toNano('0.5'),
             },
             {
                 $$type: 'Deploy',
@@ -43,15 +44,24 @@ describe('InfluenceMaster', () => {
         });
     });
 
-    it('should deploy', async () => {
+    it('should create fund', async () => {
+        const user = await blockchain.treasury('user');
         const res = await influenceMaster.send(
-            deployer.getSender(),
+            user.getSender(),
             {
-                value: toNano('0.05'),
+                value: toNano('0.5'),
             },
-            'Mint: 100'
+            'fund'
         );
 
+
+        const fundAddress = (res.events.find(x => x.type == 'account_created') as EventAccountCreated).account;
+
+        let fund = blockchain.openContract(FundContract.fromAddress(fundAddress));
+        console.log('FUND DATA', await fund.getBebe());
+        
+        // // console.log('OWNER', deployer.address);
+        // // console.log('FUND OWNER', a);
 
     });
 });

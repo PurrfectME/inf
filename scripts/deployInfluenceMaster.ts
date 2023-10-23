@@ -1,7 +1,7 @@
 import { Address, toNano } from 'ton-core';
 import { NetworkProvider } from '@ton-community/blueprint';
-import { InfluenceMasterContract } from '../build/InfluenceMaster/tact_InfluenceMasterContract';
 import { buildOnchainMetadata } from '../contracts/build_data';
+import { InfluenceMaster } from '../wrappers/InfluenceMaster';
 
 const metadata = {
     "name": "INFLUENCE WORLD",
@@ -11,7 +11,7 @@ const metadata = {
 };
 
 export async function run(provider: NetworkProvider) {
-    const influenceMaster = provider.open(await InfluenceMasterContract.fromInit(buildOnchainMetadata(metadata), 50000n));
+    const influenceMaster = provider.open(await InfluenceMaster.fromInit(buildOnchainMetadata(metadata), 50000n));
 
     await influenceMaster.send(
         provider.sender(),

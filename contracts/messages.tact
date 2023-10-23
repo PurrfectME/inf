@@ -5,11 +5,26 @@ struct JettonData {
     content: Cell;
     walletCode: Cell;
 }
+struct Fund {
+    name: String;
+    description: String;
+    jetton_balance: Int as uint128;
+    balance: Int as coins;
+    image: String;
+    owner: Address;
+}
 struct JettonWalletData {
     balance: Int;
     owner: Address;
     master: Address;
     walletCode: Cell;
+}
+struct ContentData {
+    name: String;
+    description: String;
+    symbol: String;
+    decimals: Int as uint32;
+    image: String;
 }
 message(0xf8a7ea5) TokenTransfer {
     queryId: Int as uint64;
