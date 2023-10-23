@@ -14,8 +14,6 @@ struct ContentData {
 }
 
 contract InfluenceMasterContract with Jetton {
-    const minTonsForStorage: Int = ton("0.01");
-    const gasConsumption: Int = ton("0.01");
     totalSupply: Int as coins;
     owner: Address;
     content: Cell;
@@ -62,14 +60,6 @@ contract InfluenceMasterContract with Jetton {
             send(SendParameters{to: myAddress(), value: 0, bounce: true, mode: SendRemainingValue + SendIgnoreErrors});
         }
     }
-
-     fun msgValue(value: Int): Int {
-        let msgValue: Int = value;
-        let tonBalanceBeforeMsg: Int = myBalance() - msgValue;
-        let storageFee: Int = self.minTonsForStorage - min(tonBalanceBeforeMsg, self.minTonsForStorage);
-        msgValue = msgValue - storageFee + self.gasConsumption;
-        return msgValue;
-    }
 }
 // ============================================================================================================ //
 @interface("org.ton.jetton.master")
@@ -79,6 +69,8 @@ trait Jetton with Ownable, Deployable {
     owner: Address;
     content: Cell;
     maxSupply: Int;
+    const minTonsForStorage: Int = ton("0.01");
+    const gasConsumption: Int = ton("0.01");
 
     receive(msg: TokenUpdateContent){
         self.requireOwner(); // Allow changing content only by owner
@@ -111,7 +103,7 @@ trait Jetton with Ownable, Deployable {
         let winit: StateInit = self.getJettonWalletInit(to); // Create message
         send(SendParameters{to: contractAddress(winit),
                 //ОЛЕГ ВОТ ТУТ НАДО КАК_ТО ПОДУМАТЬ))) как корректно взять стоимость для транзы этой
-                value: amount / 2,
+                value: self.msgValue(amount),
                 bounce: true,
                 mode: SendIgnoreErrors,
                 body: TokenTransferInternal{queryId: 0,
@@ -125,6 +117,14 @@ trait Jetton with Ownable, Deployable {
                 data: winit.data
             }
         );
+    }
+
+     fun msgValue(value: Int): Int {
+        let msgValue: Int = value;
+        let tonBalanceBeforeMsg: Int = myBalance() - msgValue;
+        let storageFee: Int = self.minTonsForStorage - min(tonBalanceBeforeMsg, self.minTonsForStorage);
+        msgValue = msgValue - storageFee + self.gasConsumption;
+        return msgValue;
     }
 
      fun requireSenderAsWalletOwner(owner: Address) {
