@@ -4,6 +4,7 @@ import '@ton-community/test-utils';
 import { buildOnchainMetadata } from '../contracts/build_data';
 import { InfluenceMaster } from '../build/InfluenceMaster/tact_InfluenceMaster';
 import { FundContract } from '../build/InfluenceMaster/tact_FundContract';
+import { FundItem } from '../build/InfluenceMaster/tact_FundItem';
 
 describe('InfluenceMaster', () => {
     let blockchain: Blockchain;
@@ -59,5 +60,32 @@ describe('InfluenceMaster', () => {
 
         let fund = blockchain.openContract(FundContract.fromAddress(fundAddress));
         console.log('FUND DATA', await fund.getFundData());
+    });
+
+    it('should create fund item', async () => {
+        const user = await blockchain.treasury('user');
+        const res = await influenceMaster.send(
+            user.getSender(),
+            {
+                value: toNano('0.5'),
+            },
+            'fund'
+        );
+
+
+        const fundAddress = (res.events.find(x => x.type == 'account_created') as EventAccountCreated).account;
+
+        let fund = blockchain.openContract(FundContract.fromAddress(fundAddress));
+        const itemRes = await fund.send(user.getSender(),
+        {
+            value: toNano("0.5")
+        },
+        'item'
+        );
+
+        const itemAddress = (itemRes.events.find(x => x.type == 'account_created') as EventAccountCreated).account;
+        let fundItem = blockchain.openContract(FundItem.fromAddress(itemAddress));
+
+        console.log('FUND ITEM DATA', await fundItem.getItemData());
     });
 });
