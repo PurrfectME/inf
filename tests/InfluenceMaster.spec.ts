@@ -2,8 +2,8 @@ import { Blockchain, EventAccountCreated, SandboxContract, TreasuryContract } fr
 import { Address, beginCell, fromNano, toNano } from 'ton-core';
 import '@ton-community/test-utils';
 import { buildOnchainMetadata } from '../contracts/build_data';
+import { InfluenceMaster } from '../build/InfluenceMaster/tact_InfluenceMaster';
 import { FundContract } from '../build/InfluenceMaster/tact_FundContract';
-import { InfluenceMaster } from '../wrappers/InfluenceMaster';
 
 describe('InfluenceMaster', () => {
     let blockchain: Blockchain;
@@ -58,10 +58,6 @@ describe('InfluenceMaster', () => {
         const fundAddress = (res.events.find(x => x.type == 'account_created') as EventAccountCreated).account;
 
         let fund = blockchain.openContract(FundContract.fromAddress(fundAddress));
-        console.log('FUND DATA', await fund.getBebe());
-        
-        // // console.log('OWNER', deployer.address);
-        // // console.log('FUND OWNER', a);
-
+        console.log('FUND DATA', await fund.getFundData());
     });
 });

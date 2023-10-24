@@ -5,6 +5,10 @@ struct JettonData {
     content: Cell;
     walletCode: Cell;
 }
+message Mint {
+    amount: Int;
+    receiver: Address;
+}
 struct Fund {
     name: String;
     description: String;
