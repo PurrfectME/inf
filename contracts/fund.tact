@@ -1,7 +1,8 @@
+import "@stdlib/deploy";
 import "./messages";
 import "./fund_item";
 
-contract FundContract {
+contract FundContract with Deployable {
     const minTonsForStorage: Int = ton("0.01");
     const gasConsumption: Int = ton("0.01");
     fund_name: String;

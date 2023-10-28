@@ -11,12 +11,14 @@ contract InfluenceMaster with Jetton {
     maxSupply: Int as coins; // Extract parameter we set here. The Jetton Standards doesn't have this parameter.
 
     init(content: Cell, maxSupply: Int){
-        self.totalSupply = ton("5000");
+        self.totalSupply = 0;
         self.owner = sender();
         self.mintable = true;
         self.content = content;
         self.maxSupply = maxSupply;
     }
+
+    receive(){}
 
     receive(msg: Mint){
         let ctx: Context = context();
@@ -43,14 +45,15 @@ contract InfluenceMaster with Jetton {
         //ВОТ ЭТА СТРОЧКА СДЕЛАНА ЧТОБЫ НА МАСТЕР ВОЛЕТЕ БЫЛ БАЛАНС ЧТОБЫ СЛАТЬ транзы на минт(костыль пиздец)
         //то есть сначала мы закидываем на наш мастер волет денег а потом уже реквест на минт токенов
         //это потом просто можно вынести в отдельный рисив и проверку здесь делать
-        if (myBalance() == 0) {
-            send(SendParameters{to: myAddress(), value: 0, bounce: true, mode: SendRemainingValue + SendIgnoreErrors});
-        } else {
-            //поделили на 2 чтобы хоть как-то убедиться что токены придут
-            //TODO: FIX HERE
-            self.mint(ctx.sender, ctx.value / 2, self.owner);
-            send(SendParameters{to: myAddress(), value: 0, bounce: true, mode: SendRemainingValue + SendIgnoreErrors});
-        }
+        // if (myBalance() == 0) {
+        //     send(SendParameters{to: myAddress(), value: 0, bounce: true, mode: SendRemainingValue + SendIgnoreErrors});
+        // } else {
+        //     //поделили на 2 чтобы хоть как-то убедиться что токены придут
+        //     //TODO: FIX HERE
+        //     send(SendParameters{to: myAddress(), value: 0, bounce: true, mode: SendRemainingValue + SendIgnoreErrors});
+        // }
+
+        self.mint(ctx.sender, ctx.value, myAddress());
     }
 
     receive("fund"){
@@ -113,9 +116,9 @@ trait Jetton with Ownable, Deployable {
         send(SendParameters{
                 to: contractAddress(winit),
                 //ОЛЕГ ВОТ ТУТ НАДО КАК_ТО ПОДУМАТЬ))) как корректно взять стоимость для транзы этой
-                value: self.msgValue(amount),
+                value: 0,
                 bounce: true,
-                mode: SendIgnoreErrors,
+                mode: SendRemainingValue + SendIgnoreErrors,
                 body: TokenTransferInternal{
                     queryId: 0,
                     amount: amount,

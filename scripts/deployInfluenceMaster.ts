@@ -1,13 +1,13 @@
 import { Address, toNano } from 'ton-core';
 import { NetworkProvider } from '@ton-community/blueprint';
 import { buildOnchainMetadata } from '../contracts/build_data';
-import { InfluenceMaster } from '../wrappers/InfluenceMaster';
+import { InfluenceMaster } from '../build/InfluenceMaster/tact_InfluenceMaster';
 
 const metadata = {
     "name": "INFLUENCE WORLD",
     "description": "KAK JE YA HAROSH",
     "image": "https://yt3.googleusercontent.com/YR8JivTsOQ4svnDFCdnIqYAPhwIeTRg8w0Sukv1orUYJoN2iZtaEprhWXcweMdrtcGGmptvSgQ=s176-c-k-c0x00ffffff-no-rj",
-    "symbol": "INFK"
+    "symbol": "INF"
 };
 
 export async function run(provider: NetworkProvider) {
@@ -16,11 +16,11 @@ export async function run(provider: NetworkProvider) {
     await influenceMaster.send(
         provider.sender(),
         {
-            value: toNano('0.2'),
+            value: toNano('0.5'),
         },
         {
             $$type: 'Deploy',
-            queryId: 0n,
+            queryId: 1n,
         }
     );
 

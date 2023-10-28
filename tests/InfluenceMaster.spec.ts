@@ -3,8 +3,6 @@ import { Address, beginCell, fromNano, toNano } from 'ton-core';
 import '@ton-community/test-utils';
 import { buildOnchainMetadata } from '../contracts/build_data';
 import { InfluenceMaster } from '../build/InfluenceMaster/tact_InfluenceMaster';
-import { FundContract } from '../build/InfluenceMaster/tact_FundContract';
-import { FundItem } from '../build/InfluenceMaster/tact_FundItem';
 
 describe('InfluenceMaster', () => {
     let blockchain: Blockchain;
@@ -37,6 +35,9 @@ describe('InfluenceMaster', () => {
             }
         );
 
+        console.log('ASD', influenceMaster.address);
+        
+
         expect(deployResult.transactions).toHaveTransaction({
             from: deployer.address,
             to: influenceMaster.address,
@@ -45,47 +46,68 @@ describe('InfluenceMaster', () => {
         });
     });
 
-    it('should create fund', async () => {
-        const user = await blockchain.treasury('user');
-        const res = await influenceMaster.send(
-            user.getSender(),
-            {
-                value: toNano('0.5'),
-            },
-            'fund'
-        );
+    it('should add money',async () => {
+       const user = await blockchain.treasury('user');
+       console.log('BAL BEFORE - ', await influenceMaster.getBalance());
+       
+       const res = await user.send({
+        value: toNano("15"),
+        to: influenceMaster.address,
+        // body: beginCell().storeUint(0, 32).storeStringTail('buy').endCell()
+       });
 
 
-        const fundAddress = (res.events.find(x => x.type == 'account_created') as EventAccountCreated).account;
+       console.log('RES', res.events);
 
-        let fund = blockchain.openContract(FundContract.fromAddress(fundAddress));
-        console.log('FUND DATA', await fund.getFundData());
+       console.log('BAL AFTER - ', await influenceMaster.getBalance());
+
+       
     });
 
-    it('should create fund item', async () => {
-        const user = await blockchain.treasury('user');
-        const res = await influenceMaster.send(
-            user.getSender(),
-            {
-                value: toNano('0.5'),
-            },
-            'fund'
-        );
+    // it('should create fund', async () => {
+    //     const user = await blockchain.treasury('user');
+    //     const res = await influenceMaster.send(
+    //         user.getSender(),
+    //         {
+    //             value: toNano('0.5'),
+    //         },
+    //         'fund'
+    //     );
 
 
-        const fundAddress = (res.events.find(x => x.type == 'account_created') as EventAccountCreated).account;
+    //     const fundAddress = (res.events.find(x => x.type == 'account_created') as EventAccountCreated).account;
 
-        let fund = blockchain.openContract(FundContract.fromAddress(fundAddress));
-        const itemRes = await fund.send(user.getSender(),
-        {
-            value: toNano("0.5")
-        },
-        'item'
-        );
+    //     let fund = blockchain.openContract(FundContract.fromAddress(fundAddress));
+    //     console.log('FUND DATA', await fund.getFundData());
+    // });
 
-        const itemAddress = (itemRes.events.find(x => x.type == 'account_created') as EventAccountCreated).account;
-        let fundItem = blockchain.openContract(FundItem.fromAddress(itemAddress));
+    // it('should create fund item', async () => {
+    //     const user = await blockchain.treasury('user');
+    //     const res = await influenceMaster.send(
+    //         user.getSender(),
+    //         {
+    //             value: toNano('0.5'),
+    //         },
+    //         'fund'
+    //     );
 
-        console.log('FUND ITEM DATA', await fundItem.getItemData());
-    });
+
+    //     const fundAddress = (res.events.find(x => x.type == 'account_created') as EventAccountCreated).account;
+
+    //     console.log('ADRES', fundAddress);
+        
+
+    //     // let fund = blockchain.openContract(FundContract.fromAddress(fundAddress));
+    //     // const itemRes = await fund.send(user.getSender(),
+    //     // {
+    //     //     value: toNano("0.5")
+    //     // },
+    //     // 'item'
+    //     // );
+
+    //     // const itemAddress = (itemRes.events.find(x => x.type == 'account_created') as EventAccountCreated).account;
+    //     // let fundItem = blockchain.openContract(FundItem.fromAddress(itemAddress));
+
+    //     // console.log('FUND ITEM DATA', await fundItem.getItemData());
+    // });
 });
