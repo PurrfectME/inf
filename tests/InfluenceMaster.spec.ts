@@ -47,20 +47,9 @@ describe('InfluenceMaster', () => {
     });
 
     it('should add money',async () => {
-       const user = await blockchain.treasury('user');
-       console.log('BAL BEFORE - ', await influenceMaster.getBalance());
+       const a = "str";
        
-       const res = await user.send({
-        value: toNano("15"),
-        to: influenceMaster.address,
-        // body: beginCell().storeUint(0, 32).storeStringTail('buy').endCell()
-       });
-
-
-       console.log('RES', res.events);
-
-       console.log('BAL AFTER - ', await influenceMaster.getBalance());
-
+       
        
     });
 

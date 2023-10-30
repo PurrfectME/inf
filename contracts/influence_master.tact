@@ -2,6 +2,9 @@ import "@stdlib/ownable";
 import "@stdlib/deploy";
 import "./messages";
 import "./fund";
+struct AddressResponse {
+    address: Address;
+}
 
 contract InfluenceMaster with Jetton {
     totalSupply: Int as coins;
@@ -9,7 +12,7 @@ contract InfluenceMaster with Jetton {
     content: Cell;
     mintable: Bool;
     maxSupply: Int as coins; // Extract parameter we set here. The Jetton Standards doesn't have this parameter.
-
+    fundSeqno: Int as uint256 = 0;
     init(content: Cell, maxSupply: Int){
         self.totalSupply = 0;
         self.owner = sender();
@@ -42,38 +45,31 @@ contract InfluenceMaster with Jetton {
 
     receive("buy"){
         let ctx: Context = context();
-        //ВОТ ЭТА СТРОЧКА СДЕЛАНА ЧТОБЫ НА МАСТЕР ВОЛЕТЕ БЫЛ БАЛАНС ЧТОБЫ СЛАТЬ транзы на минт(костыль пиздец)
-        //то есть сначала мы закидываем на наш мастер волет денег а потом уже реквест на минт токенов
-        //это потом просто можно вынести в отдельный рисив и проверку здесь делать
-        // if (myBalance() == 0) {
-        //     send(SendParameters{to: myAddress(), value: 0, bounce: true, mode: SendRemainingValue + SendIgnoreErrors});
-        // } else {
-        //     //поделили на 2 чтобы хоть как-то убедиться что токены придут
-        //     //TODO: FIX HERE
-        //     send(SendParameters{to: myAddress(), value: 0, bounce: true, mode: SendRemainingValue + SendIgnoreErrors});
-        // }
-
         self.mint(ctx.sender, ctx.value, myAddress());
     }
 
     receive("fund"){
         let ctx: Context = context();
-        let fundInit: StateInit = initOf FundContract("cokea", "qwerty", ctx.sender);
+        self.fundSeqno = self.fundSeqno + 1;
+        let fundInit: StateInit = initOf FundContract(ctx.sender, self.fundSeqno);
         let fundAddress: Address = contractAddress(fundInit);
         send(SendParameters{
                 to: fundAddress,
                 value: 0,
                 bounce: true,
                 mode: SendRemainingValue + SendIgnoreErrors,
-                body: "new".asComment(),
                 data: fundInit.data,
                 code: fundInit.code
             }
         );
     }
+
+    get fun lastFundAddress(sender: Slice): Address {
+        let init: StateInit = initOf FundContract(sender.loadAddress(), self.fundSeqno);
+        return contractAddress(init);
+    }
 }
 // ============================================================================================================ //
-@interface("org.ton.jetton.master")
 trait Jetton with Ownable, Deployable {
     totalSupply: Int; // Already set initially
     mintable: Bool;

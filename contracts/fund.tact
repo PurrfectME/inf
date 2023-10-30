@@ -5,19 +5,20 @@ import "./fund_item";
 contract FundContract with Deployable {
     const minTonsForStorage: Int = ton("0.01");
     const gasConsumption: Int = ton("0.01");
-    fund_name: String;
-    description: String;
+    fund_name: String = "ASD";
+    description: String = "ASD";
     balance: Int;
     image: String;
     owner: Address;
     item_seqno: Int as uint256 = 0;
-    init(fund_name: String, description: String, owner: Address){
-        self.fund_name = fund_name;
-        self.description = description;
+    init(owner: Address, seqno: Int){
         self.balance = 0;
         self.image = "ASD";
         self.owner = owner;
+        self.item_seqno = seqno;
     }
+
+    receive(){}
 
     receive("item"){
         self.item_seqno = self.item_seqno + 1;
