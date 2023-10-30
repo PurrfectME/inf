@@ -5,6 +5,16 @@ struct JettonData {
     content: Cell;
     walletCode: Cell;
 }
+struct FundItemData {
+    ownerFund: Address;
+    description: String;
+    amount_to_help: Int;
+    current_amount: Int;
+    title: String;
+    deploy_time: Int as uint32;
+    image_url: String;
+    seqno: Int;
+}
 message Mint {
     amount: Int;
     receiver: Address;
@@ -16,6 +26,8 @@ struct Fund {
     balance: Int as coins;
     image: String;
     owner: Address;
+    seqno: Int;
+    itemSeqno: Int;
 }
 struct JettonWalletData {
     balance: Int;

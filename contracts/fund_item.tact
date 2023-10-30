@@ -1,39 +1,28 @@
-struct FundItemData {
-    fund_address: Address;
-    description: String;
-    amount_to_help: Int;
-    current_amount: Int;
-    title: String;
-    deploy_time: Int as uint32;
-    image_url: String;
-    seqno: Int;
-}
+import "./messages";
 
-contract FundItem {
-    fund_address: Address;
-    description: String;
+contract FundItemContract {
+    ownerFund: Address;
+    description: String = "DESC";
     //TODO: везде добавить конкретный тип инта
-    amount_to_help: Int;
+    amount_to_help: Int = 0;
     current_amount: Int;
-    title: String;
+    title: String = "TITLE";
     deploy_time: Int as uint32;
-    image_url: String;
+    image_url: String = "IMG";
     seqno: Int;
-    init(fund_address: Address, description: String, amount_to_help: Int, title: String, image_url: String, seqno: Int){
-        self.fund_address = fund_address;
-        self.description = description;
-        self.amount_to_help = amount_to_help;
-        self.current_amount = 0;
-        self.title = title;
-        self.deploy_time = now();
-        self.image_url = image_url;
+    init(ownerFund: Address, seqno: Int){
+        self.ownerFund = ownerFund;
         self.seqno = seqno;
+        self.current_amount = 0;
+        self.deploy_time = now();
     }
 
-    get fun item_data(): FundItemData {
+    receive(){}
+
+    get fun data(): FundItemData {
         return
             FundItemData{
-                fund_address: self.fund_address,
+                ownerFund: self.ownerFund,
                 description: self.description,
                 amount_to_help: self.amount_to_help,
                 current_amount: self.current_amount,
