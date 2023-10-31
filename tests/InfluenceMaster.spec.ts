@@ -3,6 +3,7 @@ import { Address, beginCell, fromNano, toNano } from 'ton-core';
 import '@ton-community/test-utils';
 import { buildOnchainMetadata } from '../contracts/build_data';
 import { InfluenceMaster } from '../build/InfluenceMaster/tact_InfluenceMaster';
+import { FundContract } from '../build/InfluenceMaster/tact_FundContract';
 
 describe('InfluenceMaster', () => {
     let blockchain: Blockchain;
@@ -46,10 +47,35 @@ describe('InfluenceMaster', () => {
         });
     });
 
-    it('should add money',async () => {
-       const a = "str";
-       
-       
+    it('should return fund items',async () => {
+       const user = await blockchain.treasury('user');
+       const res = await influenceMaster.send(
+                user.getSender(),
+                {
+                    value: toNano('0.5'),
+                },
+                'fund'
+            );
+
+            const fundAddress = (res.events.find(x => x.type == 'account_created') as EventAccountCreated).account;
+
+            const fund = blockchain.openContract(FundContract.fromAddress(fundAddress));
+
+            await fund.send(
+                user.getSender(),
+                {
+                    value: toNano('0.5'),
+                },
+                'item'
+            );
+
+            const lastAddress = await fund.getLastItemAddress();
+            const actualAddress = await fund.getGetAllItemsAddresses();
+
+            console.log('LAST -', lastAddress);
+            console.log('ACTUAL -', actualAddress);
+            
+            
        
     });
 

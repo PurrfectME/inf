@@ -44,7 +44,22 @@ contract FundContract with Deployable {
         return contractAddress(init);
     }
 
+    get fun getAllItemsAddresses(): map<Int, Address>{
+        let i: Int = 1;
+        let addressesMap: map<Int, Address> = emptyMap();
+
+        while(i <= self.item_seqno) {
+            let itemAddress: Address = self.getItemAddress(i);
+            addressesMap.set(i, itemAddress);
+
+            i = i + 1;
+        }
+
+        return addressesMap;
+    }
+
     get fun fund_data(): Fund {
+        //TODO: сделать здесь без переменной а сразу возвращать, чтобы поля на фронте из стека парсились по порядку
         let res: Fund = Fund{
             balance: myBalance(),
             description: self.description,
@@ -56,5 +71,10 @@ contract FundContract with Deployable {
             itemSeqno: self.item_seqno
         };
         return res;
+    }
+
+    fun getItemAddress(itemSeqno: Int) : Address {
+        let init: StateInit = initOf FundItemContract(myAddress(), itemSeqno);
+        return contractAddress(init);
     }
 }
