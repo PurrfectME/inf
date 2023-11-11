@@ -4,10 +4,10 @@ import { buildOnchainMetadata } from '../contracts/build_data';
 import { InfluenceMaster } from '../build/InfluenceMaster/tact_InfluenceMaster';
 
 const metadata = {
-    "name": "INFLUENCE WORLD",
-    "description": "KAK JE YA HAROSH",
-    "image": "https://yt3.googleusercontent.com/YR8JivTsOQ4svnDFCdnIqYAPhwIeTRg8w0Sukv1orUYJoN2iZtaEprhWXcweMdrtcGGmptvSgQ=s176-c-k-c0x00ffffff-no-rj",
-    "symbol": "INF"
+    name: 'INFLUENCE WORLD',
+    description: 'KAK JE YA HAROSH',
+    image: 'https://yt3.googleusercontent.com/YR8JivTsOQ4svnDFCdnIqYAPhwIeTRg8w0Sukv1orUYJoN2iZtaEprhWXcweMdrtcGGmptvSgQ=s176-c-k-c0x00ffffff-no-rj',
+    symbol: 'INF',
 };
 
 export async function run(provider: NetworkProvider) {

@@ -1,3 +1,11 @@
+message Donate {
+    master: Address;
+    amount: Int;
+    responseDestination: Address;
+}
+message CreateFundItem {
+    masterContract: Address;
+}
 struct JettonData {
     totalSupply: Int;
     mintable: Bool;

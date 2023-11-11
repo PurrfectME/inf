@@ -39,11 +39,6 @@ contract FundContract with Deployable {
         self.balance = 10;
     }
 
-    get fun lastItemAddress(): Address {
-        let init: StateInit = initOf FundItemContract(myAddress(), self.item_seqno);
-        return contractAddress(init);
-    }
-
     get fun getAllItemsAddresses(): map<Int, Address>{
         let i: Int = 1;
         let addressesMap: map<Int, Address> = emptyMap();
