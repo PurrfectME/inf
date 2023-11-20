@@ -30,7 +30,6 @@ message Mint {
 struct Fund {
     name: String;
     description: String;
-    jetton_balance: Int as uint128;
     balance: Int as coins;
     image: String;
     owner: Address;
@@ -42,6 +41,14 @@ struct JettonWalletData {
     owner: Address;
     master: Address;
     walletCode: Cell;
+    title: String;
+    isDonater: Bool;
+    seqno: Int;
+    description: String;
+    amountToHelp: Int;
+    currentAmount: Int;
+    deployTime: Int as uint32;
+    imageUrl: String;
 }
 struct ContentData {
     name: String;

@@ -2,9 +2,7 @@ import "@stdlib/ownable";
 import "@stdlib/deploy";
 import "./messages";
 import "./fund";
-struct AddressResponse {
-    address: Address;
-}
+import "./influence_wallet";
 
 contract InfluenceMaster with Jetton {
     totalSupply: Int as coins;
@@ -50,14 +48,15 @@ contract InfluenceMaster with Jetton {
 
     receive("fund"){
         let ctx: Context = context();
-        self.fundSeqno = self.fundSeqno + 1;
-        let fundInit: StateInit = initOf FundContract(ctx.sender, self.fundSeqno);
+        self.fundSeqno = (self.fundSeqno + 1);
+        //TODO: овнер фанда мастер или какой-то из наших кошелей
+        let fundInit: StateInit = initOf FundContract(myAddress(), self.fundSeqno);
         let fundAddress: Address = contractAddress(fundInit);
         send(SendParameters{
                 to: fundAddress,
                 value: 0,
                 bounce: true,
-                mode: SendRemainingValue + SendIgnoreErrors,
+                mode: (SendRemainingValue + SendIgnoreErrors),
                 data: fundInit.data,
                 code: fundInit.code
             }
@@ -86,14 +85,14 @@ trait Jetton with Ownable, Deployable {
 
     receive(msg: TokenBurnNotification){
         self.requireSenderAsWalletOwner(msg.response_destination); // Check wallet
-        self.totalSupply = self.totalSupply - msg.amount; // Update supply
+        self.totalSupply = (self.totalSupply - msg.amount); // Update supply
         if (msg.response_destination != null) {
             // Cashback
             send(SendParameters{
                     to: msg.response_destination,
                     value: 0,
                     bounce: false,
-                    mode: SendRemainingValue + SendIgnoreErrors,
+                    mode: (SendRemainingValue + SendIgnoreErrors),
                     body: TokenExcesses{queryId: msg.queryId}.toCell()
                 }
             );
@@ -106,7 +105,7 @@ trait Jetton with Ownable, Deployable {
     // @response_destination The previous owner address
      fun mint(to: Address, amount: Int, response_destination: Address) {
         // require(self.totalSupply + amount <= self.maxSupply, "The total supply will be overlapping.");
-        self.totalSupply = self.totalSupply + amount; // Update total supply
+        self.totalSupply = (self.totalSupply + amount); // Update total supply
 
         let winit: StateInit = self.getJettonWalletInit(to); // Create message
         send(SendParameters{
@@ -114,7 +113,7 @@ trait Jetton with Ownable, Deployable {
                 //ОЛЕГ ВОТ ТУТ НАДО КАК_ТО ПОДУМАТЬ))) как корректно взять стоимость для транзы этой
                 value: 0,
                 bounce: true,
-                mode: SendRemainingValue + SendIgnoreErrors,
+                mode: (SendRemainingValue + SendIgnoreErrors),
                 body: TokenTransferInternal{
                     queryId: 0,
                     amount: amount,
@@ -131,9 +130,9 @@ trait Jetton with Ownable, Deployable {
 
      fun msgValue(value: Int): Int {
         let msgValue: Int = value;
-        let tonBalanceBeforeMsg: Int = myBalance() - msgValue;
-        let storageFee: Int = self.minTonsForStorage - min(tonBalanceBeforeMsg, self.minTonsForStorage);
-        msgValue = msgValue - storageFee + self.gasConsumption;
+        let tonBalanceBeforeMsg: Int = (myBalance() - msgValue);
+        let storageFee: Int = (self.minTonsForStorage - min(tonBalanceBeforeMsg, self.minTonsForStorage));
+        msgValue = ((msgValue - storageFee) + self.gasConsumption);
         return msgValue;
     }
 
@@ -144,12 +143,14 @@ trait Jetton with Ownable, Deployable {
     }
 
     virtual fun getJettonWalletInit(address: Address): StateInit {
-        return initOf InfluenceWallet(myAddress(), address);
+        return initOf InfluenceWallet(myAddress(), address, true, 0);
     }
 
     // ====== Get Methods ====== //
 
     get fun get_jetton_data(): JettonData {
+        //TODO: хз можно ли здесь адреса мастера прокинуть
+        //TODO: 0 - для инита жетон волета самого мастера
         let code: Cell = self.getJettonWalletInit(myAddress()).code;
         return
             JettonData{
@@ -165,154 +166,4 @@ trait Jetton with Ownable, Deployable {
         let winit: StateInit = self.getJettonWalletInit(owner);
         return contractAddress(winit);
     }
-}
-
-// ============================================================ //
-@interface("org.ton.jetton.wallet")
-contract InfluenceWallet
-{
-    const minTonsForStorage: Int = ton("0.01");
-    const gasConsumption: Int = ton("0.01");
-    balance: Int;
-    owner: Address;
-    master: Address;
-    init(master: Address, owner: Address){
-        self.balance = 0;
-        self.owner = owner;
-        self.master = master;
-    }
-
-    receive(msg: TokenTransfer){
-        // 0xf8a7ea5
-        let ctx: Context = context(); // Check sender
-        require(ctx.sender == self.owner, "Invalid sender");
-        // Gas checks
-        let fwdFee: Int = ctx.readForwardFee() + ctx.readForwardFee();
-        let final: Int = 2 * self.gasConsumption + self.minTonsForStorage + fwdFee;
-        require(ctx.value > min(final, ton("0.01")), "Invalid value!!");
-        // Update balance
-        self.balance = self.balance - msg.amount;
-        require(self.balance >= 0, "Invalid balance");
-        let init: StateInit = initOf InfluenceWallet(self.master, msg.destination);
-        let walletAddress: Address = contractAddress(init);
-        send(SendParameters{
-                to: walletAddress,
-                value: 0,
-                mode: SendRemainingValue,
-                bounce: true,
-                body: TokenTransferInternal{
-                    queryId: msg.queryId,
-                    amount: msg.amount,
-                    from: self.owner,
-                    response_destination: msg.response_destination,
-                    forward_ton_amount: msg.forward_ton_amount,
-                    forward_payload: msg.forward_payload
-                }.toCell(),
-                code: init.code,
-                data: init.data
-            }
-        );
-    }
-
-    receive(msg: TokenTransferInternal){
-        // 0x178d4519
-        let ctx: Context = context();
-        if (ctx.sender != self.master) {
-            let sinit: StateInit = initOf InfluenceWallet(self.master, msg.from);
-            require(contractAddress(sinit) == ctx.sender, "Invalid sender!");
-        }
-        // Update balance
-        self.balance = self.balance + msg.amount;
-        require(self.balance >= 0, "Invalid balance");
-        // Get value for gas
-        let msgValue: Int = self.msgValue(ctx.value);
-        let fwdFee: Int = ctx.readForwardFee();
-        msgValue = msgValue - msg.forward_ton_amount - fwdFee;
-        // 0x7362d09c - notify the new owner of JettonToken that the transfer is complete
-        if (msg.forward_ton_amount > 0) {
-            send(SendParameters{
-                    to: self.owner,
-                    value: msg.forward_ton_amount,
-                    mode: SendPayGasSeparately + SendIgnoreErrors,
-                    bounce: false,
-                    body: TokenNotification{
-                        queryId: msg.queryId,
-                        amount: msg.amount,
-                        from: msg.from,
-                        forward_payload: msg.forward_payload
-                    }.toCell()
-                }
-            );
-        }
-        // 0xd53276db -- Cashback to the original Sender
-        if (msg.response_destination != null) {
-            send(SendParameters{
-                    to: msg.response_destination,
-                    value: msgValue,
-                    bounce: false,
-                    body: TokenExcesses{queryId: msg.queryId}.toCell(),
-                    mode: SendIgnoreErrors
-                }
-            );
-        }
-    }
-
-    receive(msg: TokenBurn){
-        let ctx: Context = context();
-        require(ctx.sender == self.owner, "Invalid sender"); // Check sender
-
-        self.balance = self.balance - msg.amount; // Update balance
-        require(self.balance >= 0, "Invalid balance");
-        let fwdFee: Int = ctx.readForwardFee(); // Gas checks
-        require(ctx.value > fwdFee + 2 * self.gasConsumption + self.minTonsForStorage, "Invalid value - Burn");
-        // Burn tokens
-        send(SendParameters{
-                to: self.master,
-                value: 0,
-                mode: SendRemainingValue,
-                bounce: true,
-                body: TokenBurnNotification{
-                    queryId: msg.queryId,
-                    amount: msg.amount,
-                    response_destination: self.owner
-                }.toCell()
-            }
-        );
-    }
-
-    get fun msgValue(value: Int): Int {
-        let msgValue: Int = value;
-        let tonBalanceBeforeMsg: Int = myBalance() - msgValue;
-        let storageFee: Int = self.minTonsForStorage - min(tonBalanceBeforeMsg, self.minTonsForStorage);
-        msgValue = msgValue - storageFee + self.gasConsumption;
-        return msgValue;
-    }
-
-    // bounced(src: bounced<TokenTransferInternal>){
-    //     self.balance = self.balance + src.amount;
-    // }
-
-    // bounced(src: bounced<TokenBurnNotification>){
-    //     self.balance = self.balance + src.amount;
-    // }
-
-    get fun get_wallet_data(): JettonWalletData {
-        return
-            JettonWalletData{
-                balance: self.balance,
-                owner: self.owner,
-                master: self.master,
-                walletCode: initOf InfluenceWallet(self.master, self.owner).code
-            };
-    }
-
-    // bounced(msg: Slice) {
-    //     // Parse bounced message
-    //     msg.skipBits(32); // 0xFFFFFFFF
-    //     let op: Int = msg.loadUint(32);
-    //     let queryId: Int = msg.loadUint(64);
-    //     let jettonAmount: Int = msg.loadCoins();
-    //     require(op == 0x178d4519 || op == 0x7bdd97de, "Invalid bounced message");
-    //     self.balance = self.balance + jettonAmount; // Update balance
-    // }
 }

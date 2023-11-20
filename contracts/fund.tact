@@ -1,30 +1,28 @@
-import "@stdlib/deploy";
 import "./messages";
-import "./fund_item";
+import "./influence_wallet";
 
-contract FundContract with Deployable {
+contract FundContract {
     const minTonsForStorage: Int = ton("0.01");
     const gasConsumption: Int = ton("0.01");
     fund_name: String = "NAME";
     description: String = "DESCRIPTION";
-    balance: Int;
     image: String;
     owner: Address;
     item_seqno: Int as uint256 = 0;
     seqno: Int as uint256;
     init(owner: Address, seqno: Int){
-        self.balance = 0;
         self.image = "IMAGE";
         self.owner = owner;
         self.seqno = seqno;
         self.item_seqno = 0;
     }
 
-    receive(){}
+    receive(){
+    }
 
     receive("item"){
         self.item_seqno = self.item_seqno + 1;
-        let itemInit: StateInit = initOf FundItemContract(myAddress(), self.item_seqno);
+        let itemInit: StateInit = initOf InfluenceWallet(self.owner, myAddress(), false, self.item_seqno);
         send(SendParameters{
                 to: contractAddress(itemInit),
                 value: 0,
@@ -35,16 +33,12 @@ contract FundContract with Deployable {
         );
     }
 
-    receive("new"){
-        self.balance = 10;
-    }
-
     get fun getAllItemsAddresses(): map<Int, Address>{
         let i: Int = 1;
         let addressesMap: map<Int, Address> = emptyMap();
 
         while(i <= self.item_seqno) {
-            let itemAddress: Address = self.getItemAddress(i);
+            let itemAddress: Address = self.calculateItemAddress(i);
             addressesMap.set(i, itemAddress);
 
             i = i + 1;
@@ -59,7 +53,7 @@ contract FundContract with Deployable {
             balance: myBalance(),
             description: self.description,
             name: self.fund_name,
-            jetton_balance: self.balance,
+            //TODO: make a review of all redundant fields
             image: self.image,
             owner: self.owner,
             seqno: self.seqno,
@@ -68,8 +62,12 @@ contract FundContract with Deployable {
         return res;
     }
 
-    fun getItemAddress(itemSeqno: Int) : Address {
-        let init: StateInit = initOf FundItemContract(myAddress(), itemSeqno);
+    fun calculateItemAddress(itemSeqno: Int): Address {
+        let init: StateInit = initOf InfluenceWallet(self.owner, myAddress(), false, itemSeqno);
         return contractAddress(init);
+    }
+
+    get fun getItemAddress(itemSeqno: Int): Address {
+        return self.calculateItemAddress(itemSeqno);
     }
 }

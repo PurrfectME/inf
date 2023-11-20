@@ -14,7 +14,8 @@ import {
 import '@ton-community/test-utils';
 import { buildOnchainMetadata } from '../contracts/build_data';
 import { InfluenceMaster } from '../build/InfluenceMaster/tact_InfluenceMaster';
-import { FundContract } from '../build/InfluenceMaster/tact_FundContract';
+import { InfluenceWallet } from '../build/InfluenceMaster/tact_InfluenceWallet';
+import { FundContract } from '../build/Fund/tact_FundContract';
 
 describe('InfluenceMaster', () => {
     let blockchain: Blockchain;
@@ -56,76 +57,70 @@ describe('InfluenceMaster', () => {
         });
     });
 
-    it('should return fund items', async () => {
+    it('should create donater jetton wallet', async () => {
         const user = await blockchain.treasury('user');
-        const res = await influenceMaster.send(
+        await influenceMaster.send(
             user.getSender(),
             {
-                value: toNano('0.5'),
+                value: toNano('1'),
+            },
+            'buy'
+        );
+
+        const userJettonWalletAddress = await influenceMaster.getGetWalletAddress(user.address);
+
+        const jettonWallet = blockchain.openContract(
+            await InfluenceWallet.fromInit(influenceMaster.address, user.address, true, 0n)
+        );
+
+        expect(jettonWallet.address.toString()).toEqual(userJettonWalletAddress.toString());
+        expect((await jettonWallet.getGetWalletData()).balance).toEqual(toNano(1));
+    });
+
+    it('should create item jetton wallet', async () => {
+        const user = await blockchain.treasury('user');
+
+        // await influenceMaster.send(
+        //     deployer.getSender(),
+        //     {
+        //         value: toNano('1'),
+        //     },
+        //     null
+        // );
+        const fund = blockchain.openContract(await FundContract.fromInit(influenceMaster.address, 1n));
+
+        await influenceMaster.send(
+            user.getSender(),
+            {
+                value: toNano('1'),
             },
             'fund'
         );
 
-        const fundAddress = (res.events.find((x) => x.type == 'account_created') as EventAccountCreated).account;
-
-        const fund = blockchain.openContract(FundContract.fromAddress(fundAddress));
+        await fund.send(deployer.getSender(), { value: toNano('1') }, null);
+        console.log('1', fromNano((await fund.getFundData()).balance));
+        // console.log('FUND', await fund.getFundData());
 
         await fund.send(
             user.getSender(),
             {
-                value: toNano('0.5'),
+                value: toNano('0.2'),
             },
             'item'
         );
 
-        // const lastAddress = await fund.getLastItemAddress();
-        const actualAddress = await fund.getGetAllItemsAddresses();
+        // console.log('ITEM SEQNO', (await fund.getFundData()).itemSeqno);
 
-        // console.log('LAST -', lastAddress);
-        console.log('ACTUAL -', actualAddress);
+        const itemJettonWalletAddress = await fund.getGetItemAddress(1n);
+
+        const jettonWallet = blockchain.openContract(
+            await InfluenceWallet.fromInit(influenceMaster.address, fund.address, false, 1n)
+        );
+
+        console.log('item wallet', await jettonWallet.getGetWalletData());
+
+        expect(jettonWallet.address.toString()).toEqual(itemJettonWalletAddress.toString());
+
+        expect((await jettonWallet.getGetWalletData()).seqno).toEqual(toNano(1));
     });
-
-    // it('should create fund', async () => {
-    //     const user = await blockchain.treasury('user');
-    //     const res = await influenceMaster.send(
-    //         user.getSender(),
-    //         {
-    //             value: toNano('0.5'),
-    //         },
-    //         'fund'
-    //     );
-
-    //     const fundAddress = (res.events.find(x => x.type == 'account_created') as EventAccountCreated).account;
-
-    //     let fund = blockchain.openContract(FundContract.fromAddress(fundAddress));
-    //     console.log('FUND DATA', await fund.getFundData());
-    // });
-
-    // it('should create fund item', async () => {
-    //     const user = await blockchain.treasury('user');
-    //     const res = await influenceMaster.send(
-    //         user.getSender(),
-    //         {
-    //             value: toNano('0.5'),
-    //         },
-    //         'fund'
-    //     );
-
-    //     const fundAddress = (res.events.find(x => x.type == 'account_created') as EventAccountCreated).account;
-
-    //     console.log('ADRES', fundAddress);
-
-    //     // let fund = blockchain.openContract(FundContract.fromAddress(fundAddress));
-    //     // const itemRes = await fund.send(user.getSender(),
-    //     // {
-    //     //     value: toNano("0.5")
-    //     // },
-    //     // 'item'
-    //     // );
-
-    //     // const itemAddress = (itemRes.events.find(x => x.type == 'account_created') as EventAccountCreated).account;
-    //     // let fundItem = blockchain.openContract(FundItem.fromAddress(itemAddress));
-
-    //     // console.log('FUND ITEM DATA', await fundItem.getItemData());
-    // });
 });
