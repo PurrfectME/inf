@@ -8,7 +8,7 @@ contract FundContract {
     description: String = "DESCRIPTION";
     image: String;
     owner: Address;
-    item_seqno: Int as uint256 = 0;
+    item_seqno: Int as uint256;
     seqno: Int as uint256;
     init(owner: Address, seqno: Int){
         self.image = "IMAGE";
@@ -22,11 +22,17 @@ contract FundContract {
 
     receive("item"){
         self.item_seqno = self.item_seqno + 1;
-        let itemInit: StateInit = initOf InfluenceWallet(self.owner, myAddress(), false, self.item_seqno);
+        let itemInit: StateInit = initOf InfluenceWallet(self.owner, myAddress(), self.item_seqno);
+        // let destination: Address = contractAddress(itemInit);
         send(SendParameters{
-                to: contractAddress(itemInit),
+                to: self.owner,
                 value: 0,
                 mode: SendRemainingValue + SendIgnoreErrors,
+                body: Mint{
+                    amount: ton("0.1"),
+                    receiver: myAddress(),
+                    seqno: self.item_seqno
+                }.toCell(),
                 data: itemInit.data,
                 code: itemInit.code
             }
@@ -63,7 +69,7 @@ contract FundContract {
     }
 
     fun calculateItemAddress(itemSeqno: Int): Address {
-        let init: StateInit = initOf InfluenceWallet(self.owner, myAddress(), false, itemSeqno);
+        let init: StateInit = initOf InfluenceWallet(self.owner, myAddress(), itemSeqno);
         return contractAddress(init);
     }
 

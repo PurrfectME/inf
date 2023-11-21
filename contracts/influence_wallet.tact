@@ -8,25 +8,26 @@ contract InfluenceWallet {
     owner: Address;
     master: Address;
     title: String = "TITLE";
-    isDonater: Bool;
     //SEQNO нужны только для фетча всех заявок(жетон волетов)
     //у всех донатеров секно всегда 0!!!
-    seqno: Int;
+    seqno: Int as uint256;
     description: String = "DESC";
     //TODO: везде добавить конкретный тип инта
     amountToHelp: Int = 0;
     currentAmount: Int;
     deployTime: Int as uint32;
     imageUrl: String = "IMG";
-    init(master: Address, owner: Address, isDonater: Bool, seqno: Int){
+    init(master: Address, owner: Address, seqno: Int){
         self.balance = 0;
         self.owner = owner;
         self.master = master;
-        self.isDonater = isDonater;
         self.seqno = seqno;
         self.currentAmount = 0;
         self.deployTime = now();
     }
+
+    //TODO: add empty receive which accepts TONs mint jettons and return TONs to master contract
+    receive(){}
 
     receive(msg: TokenTransfer){
         // 0xf8a7ea5
@@ -39,8 +40,18 @@ contract InfluenceWallet {
         // Update balance
         self.balance = (self.balance - msg.amount);
         require(self.balance >= 0, "Invalid balance");
-        let init: StateInit = initOf InfluenceWallet(self.master, msg.destination, true, 0);
-        let walletAddress: Address = contractAddress(init);
+        //TODO: false here must be
+        //add field to message tokentrasnfer: isDOnate if yes - msg.destination == fund address/isDOnater == false
+        //otherwise if isDonate == false - it means that user sends jettons from his jetton wallet to another jetton
+        //wallet which should be donater also
+        let init: StateInit? = null;
+        if (msg.isDonate == true) {
+            init = initOf InfluenceWallet(self.master, msg.destination, msg.itemSeqno);
+        } else {
+            init = initOf InfluenceWallet(self.master, msg.destination, 0);
+        }
+        let sInit: StateInit = init!!;
+        let walletAddress: Address = contractAddress(sInit);
         send(SendParameters{
                 to: walletAddress,
                 value: 0,
@@ -54,8 +65,8 @@ contract InfluenceWallet {
                     forward_ton_amount: msg.forward_ton_amount,
                     forward_payload: msg.forward_payload
                 }.toCell(),
-                code: init.code,
-                data: init.data
+                code: sInit.code,
+                data: sInit.data
             }
         );
     }
@@ -63,10 +74,11 @@ contract InfluenceWallet {
     receive(msg: TokenTransferInternal){
         // 0x178d4519
         let ctx: Context = context();
-        if (ctx.sender != self.master) {
-            let sinit: StateInit = initOf InfluenceWallet(self.master, msg.from, true, 0);
-            require(contractAddress(sinit) == ctx.sender, "Invalid sender!");
-        }
+        //TODO: check this moment when fund sends this message
+        // if (ctx.sender != self.master) {
+        //     let sinit: StateInit = initOf InfluenceWallet(self.master, msg.from, true, 0);
+        //     require(contractAddress(sinit) == ctx.sender, "Invalid sender!");
+        // }
         // Update balance
         self.balance = (self.balance + msg.amount);
         require(self.balance >= 0, "Invalid balance");
@@ -145,12 +157,13 @@ contract InfluenceWallet {
     get fun get_wallet_data(): JettonWalletData {
         return
             JettonWalletData{
+                //TODO: store this as coins(varuint16) to save bits
                 balance: self.balance,
                 owner: self.owner,
                 master: self.master,
-                walletCode: initOf InfluenceWallet(self.master, self.owner, self.isDonater, self.seqno).code,
+                walletCode: initOf InfluenceWallet(self.master, self.owner, self.seqno).code,
                 title: self.title,
-                isDonater: self.isDonater,
+                isDonater: false,
                 seqno: self.seqno,
                 description: self.description,
                 amountToHelp: self.amountToHelp,

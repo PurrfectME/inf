@@ -26,6 +26,7 @@ struct FundItemData {
 message Mint {
     amount: Int;
     receiver: Address;
+    seqno: Int as uint256;
 }
 struct Fund {
     name: String;
@@ -65,6 +66,8 @@ message(0xf8a7ea5) TokenTransfer {
     custom_payload: Cell?;
     forward_ton_amount: Int as coins;
     forward_payload: Slice as remaining; // Comment Text message when Transfer the jetton
+    isDonate: Bool;
+    itemSeqno: Int;
 }
 message(0x178d4519) TokenTransferInternal {
     queryId: Int as uint64;

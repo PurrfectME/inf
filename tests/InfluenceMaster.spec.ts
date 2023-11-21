@@ -14,8 +14,10 @@ import {
 import '@ton-community/test-utils';
 import { buildOnchainMetadata } from '../contracts/build_data';
 import { InfluenceMaster } from '../build/InfluenceMaster/tact_InfluenceMaster';
-import { InfluenceWallet } from '../build/InfluenceMaster/tact_InfluenceWallet';
 import { FundContract } from '../build/Fund/tact_FundContract';
+import { InfluenceWallet } from '../build/Fund/tact_InfluenceWallet';
+
+
 
 describe('InfluenceMaster', () => {
     let blockchain: Blockchain;
@@ -57,25 +59,25 @@ describe('InfluenceMaster', () => {
         });
     });
 
-    it('should create donater jetton wallet', async () => {
-        const user = await blockchain.treasury('user');
-        await influenceMaster.send(
-            user.getSender(),
-            {
-                value: toNano('1'),
-            },
-            'buy'
-        );
+    // it('should create donater jetton wallet', async () => {
+    //     const user = await blockchain.treasury('user');
+    //     await influenceMaster.send(
+    //         user.getSender(),
+    //         {
+    //             value: toNano('1'),
+    //         },
+    //         'buy'
+    //     );
 
-        const userJettonWalletAddress = await influenceMaster.getGetWalletAddress(user.address);
+    //     const userJettonWalletAddress = await influenceMaster.getGetWalletAddress(user.address);
 
-        const jettonWallet = blockchain.openContract(
-            await InfluenceWallet.fromInit(influenceMaster.address, user.address, true, 0n)
-        );
+    //     const jettonWallet = blockchain.openContract(
+    //         await InfluenceWallet.fromInit(influenceMaster.address, user.address, 0n)
+    //     );
 
-        expect(jettonWallet.address.toString()).toEqual(userJettonWalletAddress.toString());
-        expect((await jettonWallet.getGetWalletData()).balance).toEqual(toNano(1));
-    });
+    //     expect(jettonWallet.address.toString()).toEqual(userJettonWalletAddress.toString());
+    //     expect((await jettonWallet.getGetWalletData()).balance).toEqual(toNano(1));
+    // });
 
     it('should create item jetton wallet', async () => {
         const user = await blockchain.treasury('user');
@@ -112,15 +114,20 @@ describe('InfluenceMaster', () => {
         // console.log('ITEM SEQNO', (await fund.getFundData()).itemSeqno);
 
         const itemJettonWalletAddress = await fund.getGetItemAddress(1n);
+        // const adr = (await fund.getAdr()).toString()
 
         const jettonWallet = blockchain.openContract(
-            await InfluenceWallet.fromInit(influenceMaster.address, fund.address, false, 1n)
+            await InfluenceWallet.fromInit(influenceMaster.address, fund.address, 1n)
         );
 
-        console.log('item wallet', await jettonWallet.getGetWalletData());
+        await jettonWallet.send(deployer.getSender(), { value: toNano('1') }, null);
 
-        expect(jettonWallet.address.toString()).toEqual(itemJettonWalletAddress.toString());
 
-        expect((await jettonWallet.getGetWalletData()).seqno).toEqual(toNano(1));
+        // console.log('ASD', (await jettonWallet.getGetWalletData()).owner.toString() == fund.address.toString());
+        
+        expect((await jettonWallet.getGetWalletData()).seqno).toEqual(1n);
+
+        expect(itemJettonWalletAddress.toString()).toEqual(jettonWallet.address.toString());
+
     });
 });

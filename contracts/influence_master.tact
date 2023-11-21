@@ -21,19 +21,20 @@ contract InfluenceMaster with Jetton {
 
     receive(){}
 
+    //TODO: за создание заявки мы можем брать крупицу у фонда на свой мастер, чтобы сминтить для них жетон волет
     receive(msg: Mint){
-        let ctx: Context = context();
+        // let ctx: Context = context();
         // require(ctx.sender == self.owner, "Not Owner");
         // require(self.mintable, "Can't Mint Anymore");
-        self.mint(msg.receiver, msg.amount, self.owner); // (to, amount, response_destination)
+        self.mint(msg.receiver, msg.amount, self.owner, msg.seqno);
     }
 
-    receive("Mint: 100"){
-        // Public Minting
-        let ctx: Context = context();
-        require(self.mintable, "Can't Mint Anymore");
-        self.mint(ctx.sender, 100, self.owner); // 🔴
-    }
+    // receive("Mint: 100"){
+    //     // Public Minting
+    //     let ctx: Context = context();
+    //     require(self.mintable, "Can't Mint Anymore");
+    //     self.mint(ctx.sender, 100, self.owner); // 🔴
+    // }
 
     receive("Owner: MintClose"){
         let ctx: Context = context();
@@ -43,7 +44,7 @@ contract InfluenceMaster with Jetton {
 
     receive("buy"){
         let ctx: Context = context();
-        self.mint(ctx.sender, ctx.value, myAddress());
+        self.mint(ctx.sender, ctx.value, myAddress(), 0);
     }
 
     receive("fund"){
@@ -103,11 +104,11 @@ trait Jetton with Ownable, Deployable {
     // @to The Address receive the Jetton token after minting
     // @amount The amount of Jetton token being minted
     // @response_destination The previous owner address
-     fun mint(to: Address, amount: Int, response_destination: Address) {
+     fun mint(to: Address, amount: Int, response_destination: Address, seqno: Int) {
         // require(self.totalSupply + amount <= self.maxSupply, "The total supply will be overlapping.");
         self.totalSupply = (self.totalSupply + amount); // Update total supply
 
-        let winit: StateInit = self.getJettonWalletInit(to); // Create message
+        let winit: StateInit = self.getJettonWalletInit(to, seqno); // Create message
         send(SendParameters{
                 to: contractAddress(winit),
                 //ОЛЕГ ВОТ ТУТ НАДО КАК_ТО ПОДУМАТЬ))) как корректно взять стоимость для транзы этой
@@ -138,12 +139,12 @@ trait Jetton with Ownable, Deployable {
 
      fun requireSenderAsWalletOwner(owner: Address) {
         let ctx: Context = context();
-        let winit: StateInit = self.getJettonWalletInit(owner);
+        let winit: StateInit = self.getJettonWalletInit(owner, 0);
         require(contractAddress(winit) == ctx.sender, "Invalid sender");
     }
 
-    virtual fun getJettonWalletInit(address: Address): StateInit {
-        return initOf InfluenceWallet(myAddress(), address, true, 0);
+    virtual fun getJettonWalletInit(address: Address, seqno: Int): StateInit {
+        return initOf InfluenceWallet(myAddress(), address, seqno);
     }
 
     // ====== Get Methods ====== //
@@ -151,7 +152,7 @@ trait Jetton with Ownable, Deployable {
     get fun get_jetton_data(): JettonData {
         //TODO: хз можно ли здесь адреса мастера прокинуть
         //TODO: 0 - для инита жетон волета самого мастера
-        let code: Cell = self.getJettonWalletInit(myAddress()).code;
+        let code: Cell = self.getJettonWalletInit(myAddress(), 0).code;
         return
             JettonData{
                 totalSupply: self.totalSupply,
@@ -163,7 +164,7 @@ trait Jetton with Ownable, Deployable {
     }
 
     get fun get_wallet_address(owner: Address): Address {
-        let winit: StateInit = self.getJettonWalletInit(owner);
+        let winit: StateInit = self.getJettonWalletInit(owner, 0);
         return contractAddress(winit);
     }
 }
