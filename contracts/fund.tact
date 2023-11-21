@@ -18,26 +18,34 @@ contract FundContract {
     }
 
     receive(){
+        let ctx: Context = context();
+
+        if(ctx.sender == self.owner){
+            self.reply(Mint{
+                receiver: myAddress(),
+                amount: 0
+            }.toCell());
+        }
     }
 
-    receive("item"){
-        self.item_seqno = self.item_seqno + 1;
-        let itemInit: StateInit = initOf InfluenceWallet(self.owner, myAddress(), self.item_seqno);
-        // let destination: Address = contractAddress(itemInit);
-        send(SendParameters{
-                to: self.owner,
-                value: 0,
-                mode: SendRemainingValue + SendIgnoreErrors,
-                body: Mint{
-                    amount: ton("0.1"),
-                    receiver: myAddress(),
-                    seqno: self.item_seqno
-                }.toCell(),
-                data: itemInit.data,
-                code: itemInit.code
-            }
-        );
-    }
+    // receive("item"){
+    //     self.item_seqno = self.item_seqno + 1;
+    //     let itemInit: StateInit = initOf InfluenceWallet(self.owner, myAddress());
+    //     // let destination: Address = contractAddress(itemInit);
+    //     send(SendParameters{
+    //             to: self.owner,
+    //             value: 0,
+    //             mode: SendRemainingValue + SendIgnoreErrors,
+    //             body: Mint{
+    //                 amount: ton("0.1"),
+    //                 receiver: myAddress(),
+    //                 seqno: self.item_seqno
+    //             }.toCell(),
+    //             data: itemInit.data,
+    //             code: itemInit.code
+    //         }
+    //     );
+    // }
 
     get fun getAllItemsAddresses(): map<Int, Address>{
         let i: Int = 1;
@@ -69,7 +77,7 @@ contract FundContract {
     }
 
     fun calculateItemAddress(itemSeqno: Int): Address {
-        let init: StateInit = initOf InfluenceWallet(self.owner, myAddress(), itemSeqno);
+        let init: StateInit = initOf InfluenceWallet(self.owner, myAddress());
         return contractAddress(init);
     }
 

@@ -7,23 +7,23 @@ contract InfluenceWallet {
     balance: Int;
     owner: Address;
     master: Address;
-    title: String = "TITLE";
-    //SEQNO нужны только для фетча всех заявок(жетон волетов)
-    //у всех донатеров секно всегда 0!!!
-    seqno: Int as uint256;
-    description: String = "DESC";
-    //TODO: везде добавить конкретный тип инта
-    amountToHelp: Int = 0;
-    currentAmount: Int;
-    deployTime: Int as uint32;
-    imageUrl: String = "IMG";
-    init(master: Address, owner: Address, seqno: Int){
+    // title: String = "TITLE";
+    // //SEQNO нужны только для фетча всех заявок(жетон волетов)
+    // //у всех донатеров секно всегда 0!!!
+    // seqno: Int as uint256;
+    // description: String = "DESC";
+    // //TODO: везде добавить конкретный тип инта
+    // amountToHelp: Int = 0;
+    // currentAmount: Int;
+    // deployTime: Int as uint32;
+    // imageUrl: String = "IMG";
+    init(master: Address, owner: Address){
         self.balance = 0;
         self.owner = owner;
         self.master = master;
-        self.seqno = seqno;
-        self.currentAmount = 0;
-        self.deployTime = now();
+        // self.seqno = seqno;
+        // self.currentAmount = 0;
+        // self.deployTime = now();
     }
 
     //TODO: add empty receive which accepts TONs mint jettons and return TONs to master contract
@@ -44,14 +44,14 @@ contract InfluenceWallet {
         //add field to message tokentrasnfer: isDOnate if yes - msg.destination == fund address/isDOnater == false
         //otherwise if isDonate == false - it means that user sends jettons from his jetton wallet to another jetton
         //wallet which should be donater also
-        let init: StateInit? = null;
-        if (msg.isDonate == true) {
-            init = initOf InfluenceWallet(self.master, msg.destination, msg.itemSeqno);
-        } else {
-            init = initOf InfluenceWallet(self.master, msg.destination, 0);
-        }
-        let sInit: StateInit = init!!;
-        let walletAddress: Address = contractAddress(sInit);
+        let init: StateInit = initOf InfluenceWallet(self.master, msg.destination);
+        // if (msg.isDonate == true) {
+        //     init = 
+        // } else {
+        //     init = initOf InfluenceWallet(self.master, msg.destination);
+        // }
+        // let sInit: StateInit = init!!;
+        let walletAddress: Address = contractAddress(init);
         send(SendParameters{
                 to: walletAddress,
                 value: 0,
@@ -65,8 +65,8 @@ contract InfluenceWallet {
                     forward_ton_amount: msg.forward_ton_amount,
                     forward_payload: msg.forward_payload
                 }.toCell(),
-                code: sInit.code,
-                data: sInit.data
+                code: init.code,
+                data: init.data
             }
         );
     }
@@ -161,15 +161,15 @@ contract InfluenceWallet {
                 balance: self.balance,
                 owner: self.owner,
                 master: self.master,
-                walletCode: initOf InfluenceWallet(self.master, self.owner, self.seqno).code,
-                title: self.title,
-                isDonater: false,
-                seqno: self.seqno,
-                description: self.description,
-                amountToHelp: self.amountToHelp,
-                currentAmount: self.currentAmount,
-                deployTime: self.deployTime,
-                imageUrl: self.imageUrl
+                walletCode: initOf InfluenceWallet(self.master, self.owner).code
+                // title: self.title,
+                // isDonater: false,
+                // seqno: self.seqno,
+                // description: self.description,
+                // amountToHelp: self.amountToHelp,
+                // currentAmount: self.currentAmount,
+                // deployTime: self.deployTime,
+                // imageUrl: self.imageUrl
             };
     }
 

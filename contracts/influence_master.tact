@@ -26,7 +26,7 @@ contract InfluenceMaster with Jetton {
         // let ctx: Context = context();
         // require(ctx.sender == self.owner, "Not Owner");
         // require(self.mintable, "Can't Mint Anymore");
-        self.mint(msg.receiver, msg.amount, self.owner, msg.seqno);
+        self.mint(msg.receiver, msg.amount, self.owner);
     }
 
     // receive("Mint: 100"){
@@ -44,7 +44,7 @@ contract InfluenceMaster with Jetton {
 
     receive("buy"){
         let ctx: Context = context();
-        self.mint(ctx.sender, ctx.value, myAddress(), 0);
+        self.mint(ctx.sender, ctx.value, myAddress());
     }
 
     receive("fund"){
@@ -53,15 +53,23 @@ contract InfluenceMaster with Jetton {
         //TODO: овнер фанда мастер или какой-то из наших кошелей
         let fundInit: StateInit = initOf FundContract(myAddress(), self.fundSeqno);
         let fundAddress: Address = contractAddress(fundInit);
+
+        // let msgValue: Int = self.msgValue(ctx.value);
+        // let fwdFee: Int = ctx.readForwardFee();
+        // msgValue = (msgValue - fwdFee);
         send(SendParameters{
                 to: fundAddress,
                 value: 0,
                 bounce: true,
-                mode: (SendRemainingValue + SendIgnoreErrors),
+                mode: SendRemainingValue + SendIgnoreErrors,
                 data: fundInit.data,
                 code: fundInit.code
             }
         );
+
+
+        // self.mint(fundAddress, msgValue, myAddress());
+
     }
 
     get fun lastFundAddress(sender: Slice): Address {
@@ -104,17 +112,17 @@ trait Jetton with Ownable, Deployable {
     // @to The Address receive the Jetton token after minting
     // @amount The amount of Jetton token being minted
     // @response_destination The previous owner address
-     fun mint(to: Address, amount: Int, response_destination: Address, seqno: Int) {
+     fun mint(to: Address, amount: Int, response_destination: Address) {
         // require(self.totalSupply + amount <= self.maxSupply, "The total supply will be overlapping.");
         self.totalSupply = (self.totalSupply + amount); // Update total supply
 
-        let winit: StateInit = self.getJettonWalletInit(to, seqno); // Create message
+        let winit: StateInit = self.getJettonWalletInit(to); // Create message
         send(SendParameters{
                 to: contractAddress(winit),
                 //ОЛЕГ ВОТ ТУТ НАДО КАК_ТО ПОДУМАТЬ))) как корректно взять стоимость для транзы этой
                 value: 0,
                 bounce: true,
-                mode: (SendRemainingValue + SendIgnoreErrors),
+                mode: SendIgnoreErrors + SendRemainingValue,
                 body: TokenTransferInternal{
                     queryId: 0,
                     amount: amount,
@@ -139,20 +147,18 @@ trait Jetton with Ownable, Deployable {
 
      fun requireSenderAsWalletOwner(owner: Address) {
         let ctx: Context = context();
-        let winit: StateInit = self.getJettonWalletInit(owner, 0);
+        let winit: StateInit = self.getJettonWalletInit(owner);
         require(contractAddress(winit) == ctx.sender, "Invalid sender");
     }
 
-    virtual fun getJettonWalletInit(address: Address, seqno: Int): StateInit {
-        return initOf InfluenceWallet(myAddress(), address, seqno);
+    virtual fun getJettonWalletInit(address: Address): StateInit {
+        return initOf InfluenceWallet(myAddress(), address);
     }
 
     // ====== Get Methods ====== //
 
     get fun get_jetton_data(): JettonData {
-        //TODO: хз можно ли здесь адреса мастера прокинуть
-        //TODO: 0 - для инита жетон волета самого мастера
-        let code: Cell = self.getJettonWalletInit(myAddress(), 0).code;
+        let code: Cell = self.getJettonWalletInit(myAddress()).code;
         return
             JettonData{
                 totalSupply: self.totalSupply,
@@ -164,7 +170,7 @@ trait Jetton with Ownable, Deployable {
     }
 
     get fun get_wallet_address(owner: Address): Address {
-        let winit: StateInit = self.getJettonWalletInit(owner, 0);
+        let winit: StateInit = self.getJettonWalletInit(owner);
         return contractAddress(winit);
     }
 }

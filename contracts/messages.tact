@@ -26,7 +26,7 @@ struct FundItemData {
 message Mint {
     amount: Int;
     receiver: Address;
-    seqno: Int as uint256;
+    // seqno: Int as uint256;
 }
 struct Fund {
     name: String;
@@ -42,14 +42,14 @@ struct JettonWalletData {
     owner: Address;
     master: Address;
     walletCode: Cell;
-    title: String;
-    isDonater: Bool;
-    seqno: Int;
-    description: String;
-    amountToHelp: Int;
-    currentAmount: Int;
-    deployTime: Int as uint32;
-    imageUrl: String;
+    // title: String;
+    // isDonater: Bool;
+    // seqno: Int;
+    // description: String;
+    // amountToHelp: Int;
+    // currentAmount: Int;
+    // deployTime: Int as uint32;
+    // imageUrl: String;
 }
 struct ContentData {
     name: String;
